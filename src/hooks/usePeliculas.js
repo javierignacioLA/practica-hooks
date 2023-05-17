@@ -1,28 +1,39 @@
+import { useState, useRef, useMemo, useCallback } from 'react'
+import { buscarPeliculas } from '../services/peliculas'
+export function usePeliculas({pelicula, ordenar}){
 
-import noresultados from '../results/no-resultado.json'
-import { useState } from 'react'
-export function usePeliculas({pelicula}){
+  const [mapeoPeliculas, setMapeoPeliculas] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const busquedaPrevia = useRef(pelicula)
+  
+    const getPeliculas = useCallback( async ({pelicula}) => {
+        if (pelicula === busquedaPrevia.current) return
+        try{
+          setLoading(true)
+          setError(null)
+          busquedaPrevia.current = pelicula
+          const nuevaPelicula = await buscarPeliculas({pelicula})
+          setMapeoPeliculas(nuevaPelicula)
+        }catch(e){
+          setError(e.message)
+        }finally{
+          setLoading(false)
+        }
+  
+      },[])
+    
+    
+   
+    const ordenarPeliculas = useMemo(() =>  {
+    return ordenar? 
+    [...mapeoPeliculas].sort((a,b) => a.title.localeCompare(b.title))
+    :(mapeoPeliculas)
+    }, [ordenar, mapeoPeliculas])
 
-  const [resultado, setResultadoPelicula] = useState([])
-    //para saber cuando tiene peliculas
-    const peliculas = resultado.Search
-
-    const mapeoPeliculas = peliculas?.map(peli => ({
-      id: peli.imdbID,
-      title: peli.Title,
-      year: peli.Year,
-      poster: peli.Poster
-    }))
-    const getPeliculas = async () => {
-      if(pelicula){
-        // setResultadoPelicula(resultados)
-        const res = await fetch (`https://www.omdbapi.com/?apikey=814f5cfc&s=${pelicula}`)
-        const data = await res.json()
-        setResultadoPelicula(data)
-      } else {
-        setResultadoPelicula(noresultados)
-      }
-    }
-  return {mapeoPeliculas, getPeliculas}
+    //console.log('ordenar', ordenarPeliculas)
+  return {mapeoPeliculas: ordenarPeliculas, getPeliculas, loading, error}
 }
+
+
 

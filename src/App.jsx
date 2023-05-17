@@ -1,8 +1,8 @@
 import './App.css'
 import Peliculas from './components/Peliculas'
 import { usePeliculas } from './hooks/usePeliculas'
-import { useEffect, useRef, useState } from 'react'
-
+import { useCallback, useEffect, useRef, useState } from 'react'
+import debounce from 'just-debounce-it'
 
 function useBusqueda(){
   const [pelicula, setPelicula] = useState('')
@@ -32,22 +32,34 @@ function useBusqueda(){
 
 function App() {
 
-  
+  const [ordenar, setOrdenar] = useState(false)
   //const inputRef = useRef()
   const {pelicula, setPelicula, error} = useBusqueda()
   
-  const {mapeoPeliculas, getPeliculas} = usePeliculas({pelicula})
+  const {mapeoPeliculas, getPeliculas, loading} = usePeliculas({pelicula, ordenar})
   
   const handleSubmit = (e) => {
     e.preventDefault()
     // const inputForm = inputRef.current.value
     // console.log(inputForm)
     console.log(pelicula)
-    getPeliculas()
+    getPeliculas({pelicula})
+  
   }
   const handleChange = (e) => {
-    setPelicula(e.target.value)
+    const nuevaPelicula = e.target.value
+    //setPelicula(e.target.value)
+    setPelicula(nuevaPelicula)
+    debouncedGetPeliculas({nuevaPelicula})
   }
+  const handleOrdenar = () => {
+    setOrdenar(!ordenar)
+  }
+  const debouncedGetPeliculas = useCallback(
+    debounce (pelicula => {
+    getPeliculas({pelicula})
+  }, 700)
+  ,[getPeliculas])
 
 
   return (
@@ -66,6 +78,7 @@ function App() {
         value={pelicula} 
         onChange={handleChange}
         />
+        <input type='checkbox' onChange={handleOrdenar} checked={ordenar}/>
         <button type='submit'>Buscar Pelicula</button>
       </form>
       {
@@ -73,7 +86,9 @@ function App() {
       }
      </header>
      <main>
-      <Peliculas peliculas={mapeoPeliculas}/>
+      {
+        loading? <p>Cargando peliculas</p>: <Peliculas peliculas={mapeoPeliculas}/>
+      }
      </main>
     </div>
   )
